@@ -1,11 +1,44 @@
 import * as SocketClient from "socket.io-client";
-import { hostname } from "os";
+import * as dotenv from "dotenv";
+dotenv.config();
 
-let synced = false;
-const socket = SocketClient.connect("ws://localhost:5000");
+const serverUrl = process.env.SERVER_URL || "ws://localhost:5000";
+
+const socket = SocketClient.connect(serverUrl);
 socket.on("connect", connect);
 socket.on("disconnect", disconnect);
 
+socket.on('connect_timeout', (timeout) => {
+  console.log("Connect timeout " + JSON.stringify(timeout));
+});
+
+socket.on('connect_error', (timeout) => {
+  console.log("Connect error " + JSON.stringify(timeout));
+});
+
+socket.on('error', (timeout) => {
+  console.log("Error: " + JSON.stringify(timeout));
+});
+
+socket.on('reconnect', (timeout) => {
+  console.log("reconnect");
+});
+
+socket.on('reconnect_attempt', (timeout) => {
+  console.log("reconnect_attempt");
+});
+
+socket.on('reconnecting', (timeout) => {
+  console.log("reconnecting");
+});
+
+socket.on('reconnect_error', (err) => {
+  console.log("reconnect_error: " + JSON.stringify(err));
+});
+
+socket.on('reconnect_failed', () => {
+  console.log("reconnect_failed");
+});
 
 function disconnect() {
   console.log("DISCONNECTED");
@@ -13,50 +46,4 @@ function disconnect() {
 
 function connect() {
   console.log("[" + socket.id + "] CONNECTED");
-  if(!synced) {
-    startSync();
-    synced = true;
-  }
-}
-
-function updateStatus(status: string) {
-  socket.emit("update_status", status);
-}
-
-function initSync(data) {
-  socket.emit("init_sync", data);
-}
-
-function updateSync(data) {
-  socket.emit("update_sync", data);
-}
-
-function register(type) {
-  socket.emit("register", type);
-}
-
-function startSync() {
-  const shopId = Math.round(Math.random() * (5000 - 1) + 1);
-  register("WORKER");
-  updateStatus("IDLE");
-  setTimeout(() => {
-    updateStatus("WORKING");
-    initSync({ shopId, files: 3000 });
-    setTimeout(() => {
-      updateSync({ shopId, processedFiles: 600, totalFiles: 3000 });
-      setTimeout(() => {
-        updateSync({ shopId, processedFiles: 1200, totalFiles: 3000 });
-        setTimeout(() => {
-          updateSync({ shopId, processedFiles: 1800, totalFiles: 3000 });
-          setTimeout(() => {
-            updateSync({ shopId, processedFiles: 2400, totalFiles: 3000 });
-            setTimeout(() => {
-              updateSync({ shopId, processedFiles: 3000, totalFiles: 3000 });
-              updateStatus("IDLE");
-            }, 500);
-          }, 500);
-        }, 500);
-      }, 500);
-    }, 500);
-  }, 3000);
 }
